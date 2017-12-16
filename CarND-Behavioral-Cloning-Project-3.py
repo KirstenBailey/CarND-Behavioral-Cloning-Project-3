@@ -31,27 +31,27 @@ from keras.optimizers import Adam
 from keras.callbacks import Callback
 from keras.regularizers import l2
 from keras.layers.normalization import BatchNormalization
-from IPython.display import display 
+from IPython.display import display
 
 
-# In[2]:
+# In[5]:
 
 
 # Set psuedo-random seed for reproducibility
 seed = 7
 np.random.seed(seed)
 
+print("Dataset Columns:", columns, "\n")
 columns = ['center', 'left', 'right', 'steering_angle', 'throttle', 'brake', 'speed']
 data = pd.read_csv('C:/Users/Kirst/Desktop/data/driving_log.csv', names=columns)
 
-print("Dataset Columns:", columns, "\n")
-print("Shape of the dataset:", data.shape, "\n")
 print(data.describe(), "\n")
 
+print("Shape of the dataset:", data.shape, "\n")
 print("Data loaded...")
 
 
-# In[3]:
+# In[6]:
 
 
 binwidth = 0.05
@@ -81,7 +81,7 @@ plt.show()
 # 
 # Now that we have a visual representation of the steering data, we will shuffle and separate the dataset into two parts: training and validation data. We will set aside 20% of the dataset for validation data while we keep 80% for training data. We won't need to set aside testing data here because the model will be tested and recorded when we allow it to drive autonomously around the track.
 
-# In[4]:
+# In[7]:
 
 
 # Shuffle the data
@@ -99,7 +99,7 @@ print("X_valid has {} elements.".format(len(X_validation)))
 
 # ## Configure the Variables
 
-# In[5]:
+# In[8]:
 
 
 # Variables for Model Training 
@@ -122,7 +122,7 @@ processed_img_channels = 3 # Train model in color
 # Here, we define how we will augment the images. 
 # 
 
-# In[6]:
+# In[9]:
 
 
 # Flip dataset images horizontally using OpenCV api and flip the steering angle to show the transformation
@@ -132,7 +132,7 @@ def horizontal_flip(img, steering_angle):
     return flipped_image, steering_angle
 
 
-# In[7]:
+# In[10]:
 
 
 # Randomly shift the width and height of the image using OpenCV api
@@ -151,7 +151,7 @@ def height_width_shift(img, steering_angle):
     return translated_image, steering_angle
 
 
-# In[8]:
+# In[11]:
 
 
 # Randomly apply brightness using OpenCV api
@@ -168,7 +168,7 @@ def brightness_shift(img, bright_value=None):
     return img
 
 
-# In[9]:
+# In[12]:
 
 
 # Slightly shift color channel using keras 
@@ -178,7 +178,7 @@ def channel_shift(img, channel_shift_range=channel_shift_range):
     return channel_shifted_image
 
 
-# In[10]:
+# In[13]:
 
 
 # Crop 25 pixels from the bottom of the image to remove the car’s hood, while reducing the height of the image
@@ -190,7 +190,7 @@ def crop_resize_image(img):
     return img
 
 
-# In[11]:
+# In[14]:
 
 
 # Wrapper function to take pre-processed images into current transformation
@@ -210,7 +210,7 @@ def apply_random_transformation(img, steering_angle):
 # ## Visualization of Image Augmentation
 # It's helpful to see the image augmentation for humans.
 
-# In[12]:
+# In[15]:
 
 
 # Read in an image with corresponding steering angle
@@ -270,7 +270,7 @@ _ = plt.imshow(array_to_img(cropped_image))
 # 
 # 
 
-# In[13]:
+# In[16]:
 
 
 # Load and augment pseudo-random dataset images and provide new steering angle dimensions
@@ -299,7 +299,7 @@ def load_and_augment_image(line_data):
 # Keras generators are not thread-safe for unintended interactions in multi-threaded code so we must wrap our iterator/generator in a thread-safe class.
 # https://stanford.edu/~shervine/blog/keras-generator-multiprocessing.html
 
-# In[14]:
+# In[17]:
 
 
 # Keras generators are not thread-safe 
@@ -329,7 +329,7 @@ def threadsafe_generator(f):
 # ## The Keras Generator
 # 
 
-# In[15]:
+# In[18]:
 
 
 generated_steering_angles = []
@@ -365,7 +365,7 @@ def generate_batch_data(_data, batch_size = 32):
 # ## Augmented Images - Samples
 # Our image-preprocessing pipeline will be fed to our DNN as training images. Let's have a look!
 
-# In[16]:
+# In[19]:
 
 
 # Show pre-possed images to be fed into our DNN
@@ -381,10 +381,10 @@ for i, img in enumerate(sample_images):
 plt.show()
 
 
-# ## Model Architecture = NVDA v. comma.ai model
-# Because we needed to find a light-weight solution after experiencing many delays (and a high AWS monetary expense) between Windows 10 and AWS, filepaths, Keras and Tensorflow, we tried both the NVDA model http://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf and comma.ai modelhttps://github.com/commaai/research/blob/master/train_steering_model.py. While both seemed to work adequately, we settled on the comma.ai model because of its smaller parameter size, and the fact that it has a lower processing latency, something we wanted to try on Windows 10 environment.https://github.com/commaai/research/blob/master/train_steering_model.py
+# ## Model Architecture = comma.ai model
+# Because we needed to find a light-weight solution after experiencing many delays (and a high AWS monetary expense) between Windows 10 and AWS, filepaths, Keras and Tensorflow, we tried both the nvidia model http://images.nvidia.com/content/tegra/automotive/images/2016/solutions/pdf/end-to-end-dl-using-px.pdf and comma.ai modelhttps://github.com/commaai/research/blob/master/train_steering_model.py. While both seemed to work adequately, we settled on the comma.ai model because of its smaller parameter size, and the fact that it has a lower processing latency, something we wanted to try on Windows 10 environment.https://github.com/commaai/research/blob/master/train_steering_model.py
 
-# In[17]:
+# In[20]:
 
 
 model = Sequential()
@@ -409,7 +409,7 @@ model.compile(optimizer=opt, loss='mse', metrics=[])
 # ## Fit the Model
 # We want to improve sample images with lower steer angles that have a lower probability of representation in the dataset by eliminating them with a lower probability.
 
-# In[18]:
+# In[21]:
 
 
 class LifecycleCallback(keras.callbacks.Callback):
@@ -444,7 +444,7 @@ def calc_samples_per_epoch(array_size, batch_size):
 
 # ## Train the Data
 
-# In[19]:
+# In[22]:
 
 
 # Train the Data
@@ -465,12 +465,14 @@ history = model.fit_generator(train_generator,
 
 
 # ## Conclusion
-# The average time per epoch is significantly reduced using this DNN model without compromising quality or time. We used this code on a HP Envy Desktop 750-167c with a 6th generation Intel Core is-6400 processor and 12 GB DDR 3L system memory with a 1TB hard drive.
+# The average time per epoch was significantly reduced using this DNN model without compromising quality or time. We used this code on a HP Envy Desktop 750-167c with a 6th generation Intel Core is-6400 processor and 12 GB DDR 3L system memory with a 1TB hard drive. We saved a lot of money by discontinuing AWS and using this model instead.
 
 # ## Save the Model
 
-# In[20]:
+# In[23]:
 
+
+model.save('./model.py')
 
 from keras.models import load_model
 
@@ -481,9 +483,51 @@ model.save_weights("./model.h5")
 print("Saved Model to Disk")
 
 
+# In[24]:
+
+
+from keras.models import load_model
+new_model = load_model('./model.py')
+
+
+# ## Visualization of New Model Architecture
+
+# In[25]:
+
+
+new_model.summary()
+
+
+# ## New Model Weights
+
+# In[26]:
+
+
+new_model.get_weights()
+
+
+# ## New Model Optimizer
+
+# In[27]:
+
+
+new_model.optimizer
+
+
+# ## Model.to_json
+# Here we save the architecture of a model, and not its weights, optimizers or loss funtion.
+
+# In[31]:
+
+
+model_json
+
+
+# ## Model Reconstruction from JSON
+
 # ## Analysis
 
-# In[21]:
+# In[28]:
 
 
 # summarize history for batch loss
@@ -496,7 +540,7 @@ plt.grid(True)
 plt.show()
 
 
-# In[22]:
+# In[29]:
 
 
 plt.hist(generated_steering_angles, color = "green", bins=np.arange(min(generated_steering_angles), max(generated_steering_angles) + binwidth, binwidth))
@@ -510,7 +554,7 @@ plt.show()
 
 # ## Histogram
 
-# In[23]:
+# In[30]:
 
 
 # list all data in history
